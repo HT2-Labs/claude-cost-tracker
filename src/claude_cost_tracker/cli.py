@@ -189,6 +189,14 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_false",
         help="Print the URL instead of opening a browser.",
     )
+    ui_parser.add_argument(
+        "--port",
+        type=int,
+        default=0,
+        metavar="PORT",
+        help="Loopback port to serve on. Default 0 lets the OS pick a free one; pin a fixed "
+        "port to give an SSH -L forward a stable target (e.g. over a remote connection).",
+    )
     _add_analysis_options(ui_parser)
 
     footprint_parser = subparsers.add_parser(
@@ -1025,6 +1033,7 @@ def _run_ui(args: argparse.Namespace) -> int:
             redact=args.redact,
         ),
         open_browser=args.open_browser,
+        port=args.port,
         announce=console.print,
     )
     return EXIT_OK

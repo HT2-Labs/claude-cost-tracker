@@ -207,6 +207,27 @@ class TestTheLifetimeIsBounded:
         finally:
             server.close()
 
+    def test_a_pinned_port_is_the_port_it_serves_on(
+        self, payload: dict, sessions: list[SessionRef]
+    ) -> None:
+        """`--port` gives an SSH forward a stable target, so a pinned port must be honoured
+        exactly. A free port is discovered with port 0 first so the assertion cannot flake on a
+        port another process happens to hold."""
+        scout = UiServer(lambda _selection: payload, sessions, Selection(("sess-one",)))
+        try:
+            free_port = scout.port
+        finally:
+            scout.close()
+
+        server = UiServer(
+            lambda _selection: payload, sessions, Selection(("sess-one",)), port=free_port
+        )
+        try:
+            assert server.port == free_port
+            assert server.url == f"http://127.0.0.1:{free_port}/"
+        finally:
+            server.close()
+
     def test_closing_before_it_ever_served_does_not_hang(
         self, payload: dict, sessions: list[SessionRef]
     ) -> None:

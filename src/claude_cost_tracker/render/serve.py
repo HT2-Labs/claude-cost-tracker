@@ -4,7 +4,8 @@ This is the exploration shell: pick sessions, regroup, filter, sort, drill in. I
 the *thinnest possible* thing that can do that, because the hard constraint here is not features,
 it is that nothing is left running (Principle II, FR-073, SC-025):
 
-**Stdlib only.** ``http.server`` on ``127.0.0.1`` with an OS-assigned port. No framework, no ASGI
+**Stdlib only.** ``http.server`` on ``127.0.0.1`` with an OS-assigned port by default (a caller may
+pin one, e.g. to give an SSH forward a stable target). No framework, no ASGI
 server, no dependency that would turn a read-only JSON endpoint into a service someone forgets to
 stop.
 
@@ -485,7 +486,12 @@ class _Handler(BaseHTTPRequestHandler):
 
 
 class UiHttpServer(ThreadingHTTPServer):
-    """Loopback-only, OS-assigned port, and it knows how to stop itself."""
+    """Loopback-only, and it knows how to stop itself.
+
+    ``port`` is the loopback port to bind. The default, ``0``, lets the OS assign a free one —
+    what a local run wants. A caller reaching the UI across an SSH tunnel pins a fixed port so
+    the forward has a stable target; the bind stays on loopback either way.
+    """
 
     daemon_threads = True
 
@@ -495,8 +501,9 @@ class UiHttpServer(ThreadingHTTPServer):
         sessions: Sequence[SessionRef],
         initial: Selection,
         facts: FactsProvider | None = None,
+        port: int = 0,
     ) -> None:
-        super().__init__((LOOPBACK, 0), _Handler)
+        super().__init__((LOOPBACK, port), _Handler)
         self.provider = provider
         self.sessions = tuple(sessions)
         self.initial = initial
@@ -557,8 +564,9 @@ class UiServer:
         sessions: Sequence[SessionRef],
         initial: Selection,
         facts: FactsProvider | None = None,
+        port: int = 0,
     ) -> None:
-        self._http = UiHttpServer(provider, sessions, initial, facts)
+        self._http = UiHttpServer(provider, sessions, initial, facts, port=port)
         self._serving = threading.Event()
         self._thread: threading.Thread | None = None
         self._closed = False
@@ -619,6 +627,7 @@ def serve_ui(
     *,
     facts: FactsProvider | None = None,
     open_browser: bool = True,
+    port: int = 0,
     announce: Callable[[str], None] = print,
 ) -> None:
     """Start the interactive interface and block until it is stopped (FR-072, FR-073).
@@ -628,8 +637,11 @@ def serve_ui(
 
     ``open_browser`` opens the local URL in the user's browser; it is a loopback URL, and no
     request leaves the machine either way.
+
+    ``port`` pins the loopback port; ``0`` (the default) lets the OS assign one. Pin it to give
+    an SSH ``-L`` forward a stable target when reaching the UI from another machine.
     """
-    server = UiServer(provider, sessions, initial, facts)
+    server = UiServer(provider, sessions, initial, facts, port=port)
     announce(f"ccost is serving on {server.url} — press Ctrl-C to stop it.")
     if open_browser:
         webbrowser.open(server.url)
