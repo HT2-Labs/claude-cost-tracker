@@ -8,8 +8,8 @@ session, split into the price of *loading* it into context and the price of *kee
 Local-first, no account, no API key, no network.
 
 > **Confirm R&D — 30-day spend survey.** Jump to
-> [Get your 30-day total](#get-your-30-day-total-confirm-rd-survey). Five commands, about
-> two minutes. Only one number leaves your machine.
+> [Get your 30-day total](#get-your-30-day-total-confirm-rd-survey). Two commands, no install,
+> about two minutes. Only one number leaves your machine.
 
 ```sh
 uvx claude-cost-tracker
@@ -66,28 +66,13 @@ Open a new terminal afterwards so `uv` is on your PATH. Homebrew users can run
 `brew install uv` instead. `uv` downloads the Python it needs; you do not have to install
 Python yourself.
 
-### 2. Install `ccost` from this fork
+### 2. Run the analysis once, with nothing installed (recommended)
+
+`uvx` downloads the tool into a temporary environment, runs it, and leaves nothing behind
+except a cache. This is the only step most people need:
 
 ```sh
-uv tool install --force --reinstall git+https://github.com/HT2-Labs/claude-cost-tracker
-ccost --version
-```
-
-Use the same command again later to pick up updates.
-
-If you have used `ccost` before and ever ran `ccost pricing refresh`, remove the old rate
-table first so the bundled one is used:
-
-```sh
-rm -f ~/.local/state/claude-cost-tracker/pricing.toml
-```
-
-(PowerShell: `Remove-Item -Force "$HOME\.local\state\claude-cost-tracker\pricing.toml"`.)
-
-### 3. Run the analysis over every session on this machine
-
-```sh
-ccost analyse --all
+uvx --from git+https://github.com/HT2-Labs/claude-cost-tracker ccost analyse --all
 ```
 
 The first run over a large history can take up to a minute. Near the top of the output, find
@@ -100,6 +85,27 @@ Total (API-equivalent estimate): $1,234.56
 That is the number the survey asks for. It is an estimate at Anthropic API list prices — not
 what the company was billed — and everyone reports the same kind of number, so they add up.
 
+If you have used `ccost` before and ever ran `ccost pricing refresh`, remove the old rate
+table first so the bundled one is used:
+
+```sh
+rm -f ~/.local/state/claude-cost-tracker/pricing.toml
+```
+
+(PowerShell: `Remove-Item -Force "$HOME\.local\state\claude-cost-tracker\pricing.toml"`.)
+
+### 3. Prefer a permanent install? (optional)
+
+Skip this if step 2 worked. If you want `ccost` on your PATH for later use:
+
+```sh
+uv tool install --force --reinstall git+https://github.com/HT2-Labs/claude-cost-tracker
+ccost analyse --all
+```
+
+Run the same install command again later to pick up updates. To remove it:
+`uv tool uninstall claude-cost-tracker`.
+
 ### 4. Check two things before you submit
 
 **Were any sessions skipped?** If the output contains a line like
@@ -111,20 +117,22 @@ N session(s) could not be priced and are not in these figures
 paste that whole line into the survey too. It means a model newer than this rate table.
 
 **How far back do your local records go?** Claude Code deletes local session records after
-30 days by default, so `--all` normally *is* the last 30 days. Confirm with:
+30 days by default, so `--all` normally *is* the last 30 days. Check with:
 
 ```sh
-ccost sessions --all | tail -2
+uvx --from git+https://github.com/HT2-Labs/claude-cost-tracker ccost sessions --all | tail -2
 ```
 
-(PowerShell: `ccost sessions --all | Select-Object -Last 2`.)
+(PowerShell: replace `| tail -2` with `| Select-Object -Last 2`. If you did the permanent
+install, `ccost sessions --all | tail -2` is enough.)
 
 The last entry is your oldest session. Enter its date in the survey. If it is much older than
 30 days, say so — your total covers a longer period.
 
 ### 5. More than one machine?
 
-Run steps 2–4 on each machine you used Claude Code on in the last 30 days and add the totals.
+Run steps 2 and 4 on each machine you used Claude Code on in the last 30 days and add the
+totals.
 Sessions run in the Claude Code web app or in a cloud environment leave no records on your
 laptop and are not counted; the survey has a question for that.
 
@@ -178,19 +186,30 @@ one document.
 
 ### Optional: the Claude Code plugin
 
-**Nothing above needs this.** The plugin adds `/ccost:audit`, a skill your assistant can
-call, and a session-end hook that analyses each finished session in the background:
+**Nothing above needs this, and the survey does not need it.** The plugin adds
+`/ccost:audit`, a skill your assistant can call, and a session-end hook that queues each
+finished session for analysis in the background.
+
+Install, inside Claude Code:
 
 ```
 /plugin marketplace add HT2-Labs/claude-cost-tracker
-/plugin install claude-cost-tracker
+/plugin install claude-cost-tracker@claude-cost-tracker
 ```
 
-The hook runs the installed `ccost` if there is one and falls back to `uvx` if there
-isn't — no install required either way. It queues the session and returns in about a
-second; the analysis runs detached, after the session is gone.
+Remove, inside Claude Code:
 
-What that buys is modest, and worth stating plainly rather than overselling: `ccost`
+```
+/plugin uninstall claude-cost-tracker@claude-cost-tracker
+/plugin marketplace remove claude-cost-tracker
+```
+
+**Known issue (2026-09-10):** the session-end hook can show a "hook failed" message when you
+exit Claude Code if `ccost` is not on the PATH Claude Code started with — its fallback points
+at a repository that no longer exists. The message is harmless; nothing is lost. Removing the
+plugin with the two commands above stops it. Tracked in this fork.
+
+What the hook buys is modest, and worth stating plainly rather than overselling: `ccost`
 caches every completed session it analyses anyway, so a second run is already faster than
 the first with no plugin involved. The hook only moves that first analysis earlier — to
 session end, instead of the next time you ask. On this project's own corpus (26 sessions,
