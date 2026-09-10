@@ -31,6 +31,20 @@ input_usd_per_mtok = 5.0
 output_usd_per_mtok = 25.0
 min_cacheable_tokens = 512
 
+[models."claude-fable-5-1"]
+input_usd_per_mtok = 10.0
+output_usd_per_mtok = 50.0
+min_cacheable_tokens = 512   # unchanged from Fable 5 (Anthropic model docs, 2026-09-10)
+# Published cache-read rate is $0.25/MTok — 0.025x base, a quarter of the family-wide 0.1x.
+cache_read_multiplier = 0.025
+
+[models."claude-mythos-5-1"]
+input_usd_per_mtok = 10.0
+output_usd_per_mtok = 50.0
+min_cacheable_tokens = 512
+# Same surface and pricing as Fable 5.1; whether it shares the 0.025x read rate was open at
+# launch, so it is priced at the global multiplier until the docs say otherwise.
+
 [models."claude-fable-5"]
 input_usd_per_mtok = 10.0
 output_usd_per_mtok = 50.0

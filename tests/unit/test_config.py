@@ -1,6 +1,7 @@
 """Contract on the configuration registry (Principle IX) and the honesty rules it enforces."""
 
 from datetime import date, timedelta
+from fractions import Fraction
 from pathlib import Path
 
 import pytest
@@ -168,6 +169,25 @@ class TestCacheMultipliers:
 
     def test_read_is_a_tenth(self) -> None:
         assert float(BUNDLED.cache.read) == 0.1
+
+    def test_a_model_can_carry_its_own_cache_read_multiplier(self) -> None:
+        """Fable 5.1 reads cached content at $0.25/MTok on a $10 base — 0.025x, not the
+        family-wide 0.1x. Pricing it at the global multiplier overstates every re-show 4x."""
+        assert BUNDLED.cache_read_multiplier("claude-fable-5-1") == Fraction(1, 40)
+
+    def test_models_without_an_override_read_at_the_global_multiplier(self) -> None:
+        assert BUNDLED.cache_read_multiplier("claude-opus-5") == BUNDLED.cache.read
+
+    def test_fable_5_1_is_priced_and_has_a_threshold(self) -> None:
+        assert BUNDLED.for_model("claude-fable-5-1").model_id == "claude-fable-5-1"
+        assert BUNDLED.min_cacheable_tokens("claude-fable-5-1") == 512
+
+    def test_a_read_override_changes_the_fingerprint(self, tmp_path: Path) -> None:
+        """The override enters a calculation, so a cached figure priced without it is stale."""
+        base = BUNDLED_PRICING_PATH.read_text(encoding="utf-8")
+        plain = tmp_path / "plain.toml"
+        plain.write_text(base.replace("cache_read_multiplier = 0.025\n", ""), encoding="utf-8")
+        assert load_pricing(plain).fingerprint != BUNDLED.fingerprint
 
     def test_unknown_ttl_downgrades_confidence_rather_than_assuming(self) -> None:
         """Silently assuming 5m would understate reload cost by up to 60% and never say so."""

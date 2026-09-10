@@ -117,6 +117,17 @@ class TestBuildTable:
         for model_id, model in BUNDLED.models.items():
             assert refreshed.min_cacheable_tokens(model_id) == model.min_cacheable_tokens
 
+    def test_a_per_model_read_multiplier_survives_a_refresh(self, tmp_path: Path) -> None:
+        """Rate sources publish a cache-read price, not the multiplier we verified by hand."""
+        text, _ = build(source_payload())
+        table = tmp_path / "pricing.toml"
+        table.write_text(text, encoding="utf-8")
+        refreshed = load_pricing(table)
+        assert refreshed.cache_read_multiplier("claude-fable-5-1") == BUNDLED.cache_read_multiplier(
+            "claude-fable-5-1"
+        )
+        assert refreshed.cache_read_multiplier("claude-opus-5") == refreshed.cache.read
+
     def test_models_absent_from_the_source_are_kept_and_reported(self) -> None:
         _, report = build(source_payload())
         assert "claude-sonnet-5" in report.missing_from_source
