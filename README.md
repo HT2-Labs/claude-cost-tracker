@@ -7,6 +7,10 @@ turns them into a per-file cost breakdown: what each file, skill, and tool schem
 session, split into the price of *loading* it into context and the price of *keeping* it there.
 Local-first, no account, no API key, no network.
 
+> **Learning Pool R&D — 30-day spend survey.** Jump to
+> [Get your 30-day total](#get-your-30-day-total-learning-pool-rd-survey). Five commands, about
+> two minutes. Only one number leaves your machine.
+
 ```sh
 uvx claude-cost-tracker
 ```
@@ -34,6 +38,101 @@ pip install claude-cost-tracker
 ```
 
 Working in a clone? `uv run ccost`.
+
+---
+
+## Get your 30-day total (Learning Pool R&D survey)
+
+This fork (`HT2-Labs/claude-cost-tracker`) ships current model rates, including Claude Fable
+5.1, so a fresh install prices every session. Follow the steps in order. Copy one line into
+the survey form at the end.
+
+### 1. Install `uv` (skip if `uv --version` already works)
+
+macOS or Linux, including WSL:
+
+```sh
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+Windows PowerShell (only if you run Claude Code natively on Windows — if you use WSL, run
+everything inside WSL, because that is where `~/.claude` lives):
+
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+Open a new terminal afterwards so `uv` is on your PATH. Homebrew users can run
+`brew install uv` instead. `uv` downloads the Python it needs; you do not have to install
+Python yourself.
+
+### 2. Install `ccost` from this fork
+
+```sh
+uv tool install --force --reinstall git+https://github.com/HT2-Labs/claude-cost-tracker
+ccost --version
+```
+
+Use the same command again later to pick up updates.
+
+If you have used `ccost` before and ever ran `ccost pricing refresh`, remove the old rate
+table first so the bundled one is used:
+
+```sh
+rm -f ~/.local/state/claude-cost-tracker/pricing.toml
+```
+
+(PowerShell: `Remove-Item -Force "$HOME\.local\state\claude-cost-tracker\pricing.toml"`.)
+
+### 3. Run the analysis over every session on this machine
+
+```sh
+ccost analyse --all
+```
+
+The first run over a large history can take up to a minute. Near the top of the output, find
+this line and copy it as printed:
+
+```
+Total (API-equivalent estimate): $1,234.56
+```
+
+That is the number the survey asks for. It is an estimate at Anthropic API list prices — not
+what the company was billed — and everyone reports the same kind of number, so they add up.
+
+### 4. Check two things before you submit
+
+**Were any sessions skipped?** If the output contains a line like
+
+```
+N session(s) could not be priced and are not in these figures
+```
+
+paste that whole line into the survey too. It means a model newer than this rate table.
+
+**How far back do your local records go?** Claude Code deletes local session records after
+30 days by default, so `--all` normally *is* the last 30 days. Confirm with:
+
+```sh
+ccost sessions --all | tail -2
+```
+
+(PowerShell: `ccost sessions --all | Select-Object -Last 2`.)
+
+The last entry is your oldest session. Enter its date in the survey. If it is much older than
+30 days, say so — your total covers a longer period.
+
+### 5. More than one machine?
+
+Run steps 2–4 on each machine you used Claude Code on in the last 30 days and add the totals.
+Sessions run in the Claude Code web app or in a cloud environment leave no records on your
+laptop and are not counted; the survey has a question for that.
+
+### What leaves your machine
+
+Nothing, unless you type it into the form. `ccost` reads `~/.claude/` locally and makes no
+network calls during analysis. The survey asks only for the total line, the skipped-sessions
+line if any, and the oldest-session date — not the report, file names, or session titles.
 
 ---
 
@@ -83,7 +182,7 @@ one document.
 call, and a session-end hook that analyses each finished session in the background:
 
 ```
-/plugin marketplace add talafek96/claude-cost-tracker
+/plugin marketplace add HT2-Labs/claude-cost-tracker
 /plugin install claude-cost-tracker
 ```
 
@@ -143,6 +242,15 @@ All four clean is the definition of done. The spec lives in
 [`docs/cost-model.md`](docs/cost-model.md) before touching anything that produces a number, and
 [`docs/releasing.md`](docs/releasing.md) to cut a release. Engineering standards are the
 [constitution](.specify/memory/constitution.md).
+
+## About this fork
+
+`HT2-Labs/claude-cost-tracker` is a fork of
+[talafek96/claude-cost-tracker](https://github.com/talafek96/claude-cost-tracker) by Tal Afek,
+kept so Learning Pool R&D has a stable install source. Fork changes so far: current model rates
+bundled (Claude Fable 5.1, Claude Mythos 5.1) and a per-model `cache_read_multiplier` so Fable
+5.1 cache reads are priced at the published $0.25/MTok rather than the family-wide 0.1x. Pull
+upstream with `git fetch upstream && git merge upstream/main`.
 
 ## License
 
