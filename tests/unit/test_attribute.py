@@ -52,6 +52,13 @@ class TestPricingATurn:
         assert charges.cache_read_micros == 500_000  # 0.1x
         assert charges.output_micros == 25_000_000  # $25/MTok
 
+    def test_a_per_model_read_multiplier_prices_that_model_s_reads(self, tmp_path: Path) -> None:
+        """Fable 5.1: $10/MTok base, cache reads at 0.025x — $0.25/MTok, not $1.00."""
+        builder = TranscriptBuilder()
+        builder.add_turn(model="claude-fable-5-1", cache_read=1_000_000)
+        parsed = parse_transcript(builder.write(tmp_path / "s.jsonl"))
+        assert price_turn(parsed.turns[0], 0, PRICING).cache_read_micros == 250_000
+
     def test_the_one_hour_window_doubles_the_write(self, tmp_path: Path) -> None:
         """A single session-wide write multiplier understates 1h writes by 60%."""
         builder = TranscriptBuilder()

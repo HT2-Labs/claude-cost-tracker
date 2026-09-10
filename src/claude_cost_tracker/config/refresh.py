@@ -157,6 +157,8 @@ def build_table(
         }
         if model.min_cacheable_tokens is not None:
             entry["min_cacheable_tokens"] = model.min_cacheable_tokens
+        if model.cache_read_multiplier is not None:
+            entry["cache_read_multiplier"] = float(model.cache_read_multiplier)
 
         fetched = rates.get(model_id)
         if fetched is None:
@@ -355,6 +357,8 @@ def _render_toml(
             lines.append(f"min_cacheable_tokens = {entry['min_cacheable_tokens']}")
         else:
             lines.append("# min_cacheable_tokens = ?  # REQUIRED — look it up; do not guess.")
+        if "cache_read_multiplier" in entry:
+            lines.append(f"cache_read_multiplier = {entry['cache_read_multiplier']}")
         lines.append("")
     return "\n".join(lines)
 

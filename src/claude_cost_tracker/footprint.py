@@ -120,7 +120,9 @@ def measure(analysis: SessionAnalysis, *, skill_path: Path | None = None) -> Foo
     # Charged at the cache-read rate on every turn, which is the cheapest lane it could
     # possibly sit in — and therefore the *lower* bound on its cost. Stated plainly so the
     # figure is read as the floor it is.
-    per_turn = cost_micros(tokens, model.input_micros_per_mtok, analysis.pricing.cache.read)
+    per_turn = cost_micros(
+        tokens, model.input_micros_per_mtok, analysis.pricing.cache_read_multiplier(model.model_id)
+    )
     return Footprint(
         description_chars=description_chars,
         description_tokens=tokens,

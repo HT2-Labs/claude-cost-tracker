@@ -40,7 +40,7 @@ class matters more than the count.
 |---|---|---|
 | `input_tokens` | Your new typing | **1×** (full price) |
 | `cache_creation_input_tokens` | Loading into context | **1.25×** at 5-minute TTL, **2×** at 1-hour TTL |
-| `cache_read_input_tokens` | Keeping context loaded | **0.1×** |
+| `cache_read_input_tokens` | Keeping context loaded | **0.1×** (per-model override where published: Claude Fable 5.1 reads at **0.025×**) |
 | `output_tokens` | What Claude wrote back | output rate |
 
 Two consequences that are easy to get wrong:
@@ -48,6 +48,10 @@ Two consequences that are easy to get wrong:
 - **A cache write is not one price.** The TTL doubles it. Break-even differs accordingly: two
   requests at the 5-minute TTL (1.25 + 0.1 vs. 2.0), but at least three at the 1-hour TTL
   (2.0 + 0.2 vs. 3.0). Never apply a single write multiplier across a session.
+- **The read multiplier is a family default, not a law.** Claude Fable 5.1 publishes cache reads
+  at $0.25/MTok on a $10 base — 0.025×. A model row may carry its own `cache_read_multiplier`
+  in `pricing.toml`; absent one, the global `[cache].read_multiplier` applies. Pricing a 0.025×
+  model at 0.1× overstates its largest component fourfold.
 - **`input_tokens` is the uncached remainder, not the prompt size.** Conversation size is
   `input + cache_creation + cache_read`. A session showing 4K `input_tokens` after hours of work
   is not a small session.

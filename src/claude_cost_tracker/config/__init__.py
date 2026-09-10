@@ -118,13 +118,17 @@ class ModelPricing:
     input_micros_per_mtok: int
     output_micros_per_mtok: int
     min_cacheable_tokens: int | None
+    # A model whose published cache-read rate is not the family-wide multiple of its base
+    # rate (Claude Fable 5.1 reads at 0.025x, not 0.1x). ``None`` means the table's global
+    # ``[cache].read_multiplier`` applies — the common case, not a gap.
+    cache_read_multiplier: Fraction | None = None
 
     @property
     def fingerprint(self) -> str:
         """Every value of this row that can change a figure, in a stable form."""
         return (
             f"{self.input_micros_per_mtok}/{self.output_micros_per_mtok}/"
-            f"{self.min_cacheable_tokens}"
+            f"{self.min_cacheable_tokens}/{self.cache_read_multiplier}"
         )
 
 
@@ -245,6 +249,18 @@ class Pricing:
             model=model_id,
         )
 
+    def cache_read_multiplier(self, model_id: str) -> Fraction:
+        """The cache-read multiplier that prices this model's re-shown content.
+
+        Per-model where the table records one, else the global ``[cache].read_multiplier``.
+        Cache reads are the largest component of a long session, so pricing a 0.025x model
+        at the family-wide 0.1x overstates most of its cost fourfold (docs/cost-model.md §1).
+        """
+        model = self.for_model(model_id)
+        if model.cache_read_multiplier is not None:
+            return model.cache_read_multiplier
+        return self.cache.read
+
     def min_cacheable_tokens(self, model_id: str) -> int:
         """The minimum cacheable prefix for this model. Below it, content is billed at full
         rate on every turn with no error and no cache-creation tokens (FR-078, FR-079)."""
@@ -340,11 +356,13 @@ def _load_pricing_cached(path: Path, origin: str) -> Pricing:
         if missing:
             raise ValueError(f"{path}: model {model_id!r} is missing {sorted(missing)}")
         threshold = entry.get("min_cacheable_tokens")
+        read_override = entry.get("cache_read_multiplier")
         models[model_id] = ModelPricing(
             model_id=model_id,
             input_micros_per_mtok=usd_to_micros(entry["input_usd_per_mtok"]),
             output_micros_per_mtok=usd_to_micros(entry["output_usd_per_mtok"]),
             min_cacheable_tokens=None if threshold is None else int(threshold),
+            cache_read_multiplier=None if read_override is None else to_fraction(read_override),
         )
     if not models:
         raise ValueError(f"{path} defines no models")

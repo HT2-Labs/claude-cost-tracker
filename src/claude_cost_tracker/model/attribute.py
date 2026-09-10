@@ -157,7 +157,9 @@ def price_turn(turn: TurnRecord, turn_index: int, pricing: Pricing) -> TurnCharg
         fresh_input_micros=cost_micros(usage.input_tokens, model.input_micros_per_mtok),
         cache_write_micros=cache_write,
         cache_read_micros=cost_micros(
-            usage.cache_read_tokens, model.input_micros_per_mtok, pricing.cache.read
+            usage.cache_read_tokens,
+            model.input_micros_per_mtok,
+            pricing.cache_read_multiplier(turn.model),
         ),
         output_micros=cost_micros(usage.output_tokens, model.output_micros_per_mtok),
         # Capped only for the part whose window the record genuinely does not state. Capping a
