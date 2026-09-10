@@ -7,8 +7,8 @@ turns them into a per-file cost breakdown: what each file, skill, and tool schem
 session, split into the price of *loading* it into context and the price of *keeping* it there.
 Local-first, no account, no API key, no network.
 
-> **Learning Pool R&D — 30-day spend survey.** Jump to
-> [Get your 30-day total](#get-your-30-day-total-learning-pool-rd-survey). Five commands, about
+> **Confirm R&D — 30-day spend survey.** Jump to
+> [Get your 30-day total](#get-your-30-day-total-confirm-rd-survey). Five commands, about
 > two minutes. Only one number leaves your machine.
 
 ```sh
@@ -41,7 +41,7 @@ Working in a clone? `uv run ccost`.
 
 ---
 
-## Get your 30-day total (Learning Pool R&D survey)
+## Get your 30-day total (Confirm R&D survey)
 
 This fork (`HT2-Labs/claude-cost-tracker`) ships current model rates, including Claude Fable
 5.1, so a fresh install prices every session. Follow the steps in order. Copy one line into
@@ -247,7 +247,7 @@ All four clean is the definition of done. The spec lives in
 
 `HT2-Labs/claude-cost-tracker` is a fork of
 [talafek96/claude-cost-tracker](https://github.com/talafek96/claude-cost-tracker) by Tal Afek,
-kept so Learning Pool R&D has a stable install source. Fork changes so far: current model rates
+kept so Confirm R&D has a stable install source. Fork changes so far: current model rates
 bundled (Claude Fable 5.1, Claude Mythos 5.1) and a per-model `cache_read_multiplier` so Fable
 5.1 cache reads are priced at the published $0.25/MTok rather than the family-wide 0.1x. Pull
 upstream with `git fetch upstream && git merge upstream/main`.
