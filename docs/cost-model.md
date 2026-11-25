@@ -40,7 +40,7 @@ class matters more than the count.
 |---|---|---|
 | `input_tokens` | Your new typing | **1×** (full price) |
 | `cache_creation_input_tokens` | Loading into context | **1.25×** at 5-minute TTL, **2×** at 1-hour TTL |
-| `cache_read_input_tokens` | Keeping context loaded | **0.1×** (per-model override where published: Claude Fable 5.1 reads at **0.025×**) |
+| `cache_read_input_tokens` | Keeping context loaded | **0.1×** (per-model override where published: Claude Fable 5.1, Fable 5.2 and Mythos 5.2 read at **0.025×**, Claude Opus 5.5 and Sonnet 5.5 at **0.05×**) |
 | `output_tokens` | What Claude wrote back | output rate |
 
 Two consequences that are easy to get wrong:
@@ -67,7 +67,7 @@ The threshold is model-dependent and **does not decrease monotonically across ge
 
 | Model | Minimum |
 |---|---:|
-| Opus 5 | 512 |
+| Opus 5.5 / Opus 5 / Sonnet 5.5 / Haiku 5.5 / Fable 5, 5.1, 5.2 / Mythos 5, 5.1, 5.2 | 512 |
 | Opus 4.8 / Sonnet 5 / Sonnet 4.6 | 1024 |
 | Opus 4.7 | 2048 |
 | Opus 4.6 / Opus 4.5 / Haiku 4.5 | 4096 |
