@@ -6,12 +6,13 @@
 # Prices are published API list rates in USD per million tokens. Every figure this tool
 # reports is API-EQUIVALENT COST imputed from these rates — never a billed amount (FR-010).
 #
-# Sources: Anthropic model/pricing and prompt-caching documentation as loaded 2026-08-11.
+# Sources: Anthropic model/pricing and prompt-caching documentation as loaded 2026-08-11;
+# Opus 5.5, Sonnet 5.5, Haiku 5.5, Fable 5.2 and Mythos 5.2 added 2026-11-25.
 # Re-verify `min_cacheable_tokens` when adding a model: it has NOT moved monotonically
 # across generations and cannot be derived from a version ordering (docs/cost-model.md §2).
 
 schema_version = 1
-priced_on = "2026-08-11"
+priced_on = "2026-11-25"
 
 [cache]
 # Rate multipliers applied to the model's base *input* rate (docs/cost-model.md §1).
@@ -25,6 +26,42 @@ unknown_ttl_multiplier = 1.25
 unknown_ttl_confidence = "low"
 
 # --- Claude 5 family -----------------------------------------------------------------
+
+[models."claude-opus-5-5"]
+input_usd_per_mtok = 4.0
+output_usd_per_mtok = 20.0
+min_cacheable_tokens = 512
+# Published cache-read rate is $0.20/MTok on a $4 base: 0.05x, half the family-wide 0.1x.
+cache_read_multiplier = 0.05
+
+[models."claude-sonnet-5-5"]
+input_usd_per_mtok = 2.0
+output_usd_per_mtok = 10.0
+min_cacheable_tokens = 512
+# Published cache-read rate is $0.10/MTok on a $2 base: 0.05x.
+cache_read_multiplier = 0.05
+
+[models."claude-haiku-5-5"]
+# List rate for prompts up to 100K tokens. Longer prompts bill at $0.50/$2.50; this table has
+# one rate per model, so a turn over 100K is understated. No cache-read override is
+# published, so it reads at the global multiplier.
+input_usd_per_mtok = 0.1
+output_usd_per_mtok = 0.5
+min_cacheable_tokens = 512
+
+[models."claude-fable-5-2"]
+input_usd_per_mtok = 8.0
+output_usd_per_mtok = 40.0
+min_cacheable_tokens = 512
+# Published cache-read rate is $0.20/MTok on an $8 base: 0.025x, as on Fable 5.1.
+cache_read_multiplier = 0.025
+
+[models."claude-mythos-5-2"]
+input_usd_per_mtok = 8.0
+output_usd_per_mtok = 40.0
+min_cacheable_tokens = 512
+# Same pricing as Fable 5.2, including the $0.20/MTok cache read.
+cache_read_multiplier = 0.025
 
 [models."claude-opus-5"]
 input_usd_per_mtok = 5.0

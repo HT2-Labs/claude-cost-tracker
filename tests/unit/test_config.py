@@ -182,6 +182,34 @@ class TestCacheMultipliers:
         assert BUNDLED.for_model("claude-fable-5-1").model_id == "claude-fable-5-1"
         assert BUNDLED.min_cacheable_tokens("claude-fable-5-1") == 512
 
+    @pytest.mark.parametrize(
+        ("model_id", "input_rate", "output_rate", "read_multiplier"),
+        [
+            # Published list rates; cache reads: Opus 5.5 $0.20, Sonnet 5.5 $0.10 (0.05x),
+            # Fable / Mythos 5.2 $0.20 on an $8 base (0.025x). Haiku 5.5 publishes no
+            # override, so it reads at the global multiplier.
+            ("claude-opus-5-5", 4, 20, Fraction(1, 20)),
+            ("claude-sonnet-5-5", 2, 10, Fraction(1, 20)),
+            ("claude-fable-5-2", 8, 40, Fraction(1, 40)),
+            ("claude-mythos-5-2", 8, 40, Fraction(1, 40)),
+            ("claude-haiku-5-5", Fraction(1, 10), Fraction(1, 2), Fraction(1, 10)),
+        ],
+    )
+    def test_current_models_are_priced(
+        self,
+        model_id: str,
+        input_rate: Fraction,
+        output_rate: Fraction,
+        read_multiplier: Fraction,
+    ) -> None:
+        """A model missing here skips every session on it with "could not be priced"."""
+        row = BUNDLED.for_model(model_id)
+        assert row.model_id == model_id
+        assert row.input_micros_per_mtok == input_rate * 1_000_000
+        assert row.output_micros_per_mtok == output_rate * 1_000_000
+        assert BUNDLED.cache_read_multiplier(model_id) == read_multiplier
+        assert BUNDLED.min_cacheable_tokens(model_id) == 512
+
     def test_a_read_override_changes_the_fingerprint(self, tmp_path: Path) -> None:
         """The override enters a calculation, so a cached figure priced without it is stale."""
         base = BUNDLED_PRICING_PATH.read_text(encoding="utf-8")
